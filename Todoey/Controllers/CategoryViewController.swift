@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     
@@ -18,27 +19,30 @@ class CategoryViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         loadCategories()
-
+        tableView.separatorStyle = .none
+        tableView.rowHeight = 80
     }
     
-    //MARK: - TableView Datasourrce Methods
+    // MARK: - TableView Datasourrce Methods
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return categoryArray?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        
         cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added"
+        cell.backgroundColor = UIColor(hexString: categoryArray?[indexPath.row].color ?? "1D9BF6")
+        cell.textLabel?.textColor = ContrastColorOf(UIColor(hexString: (cell.backgroundColor?.hexValue())!)!, returnFlat: true)
         return cell
     }
     
     
-    //MARK: - TableView Delegate Methods
+    // MARK: - TableView Delegate Methods
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         performSegue(withIdentifier: "goToItems", sender: self)
-        
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -50,9 +54,8 @@ class CategoryViewController: UITableViewController {
     }
     
     
-    //MARK: - Add new category
+    // MARK: - Add new category
     
-
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         var textField = UITextField()
         let alert = UIAlertController(title: "Add New Category", message: "", preferredStyle: .alert)
@@ -63,6 +66,7 @@ class CategoryViewController: UITableViewController {
             if textField.text != "" {
                 let newCategory = Category()
                 newCategory.name = textField.text!
+                newCategory.color = UIColor.randomFlat.hexValue()
                 self.save(category: newCategory)
             }
         }
@@ -77,7 +81,7 @@ class CategoryViewController: UITableViewController {
     }
 
     
-    //MARK: - Data Manipulation Methods
+    // MARK: - Data Manipulation Methods
     
     func save(category: Category) {
         do {
@@ -95,7 +99,19 @@ class CategoryViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    
-    
+    // MARK: - Delete Data Form Swipe
+    override func updateModel(at indexPath: IndexPath) {
+        if let categoryForDeletion = self.categoryArray?[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
+                }
+            } catch {
+                print("Error")
+            }
+        }
+    }
     
 }
+
+
